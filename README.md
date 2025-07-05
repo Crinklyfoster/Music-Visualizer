@@ -1,256 +1,317 @@
-# 🎵 Audio Spectrum Visualizer
+# 🎵 Enhanced Audio Spectrum Visualizer v2.0
 
-A beautiful and interactive Streamlit web application for visualizing audio files with advanced signal processing and stunning visualizations.
+A comprehensive, real-time audio analysis application built with Streamlit that provides advanced time and frequency domain analysis of audio files with professional-grade visualizations.
 
-![Audio Visualizer](https://img.shields.io/badge/Audio-Visualizer-blue?style=for-the-badge&logo=music)
-![Python](https://img.shields.io/badge/Python-3.8+-green?style=for-the-badge&logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+## 🆕 What's New in v2.0
 
-## 📋 Table of Contents
+### 🚀 Major Enhancements
+- **Real-Time Analysis Simulation** with customizable parameters
+- **3D Spectrogram Visualization** with interactive surface plots
+- **Advanced Feature Extraction** (100+ audio features)
+- **Comprehensive Export System** (CSV, JSON, Markdown reports)
+- **Enhanced UI/UX** with modern glassmorphism design
+- **Harmonic-Percussive Separation** for detailed component analysis
+- **Tonnetz Visualization** for tonal analysis
+- **Statistical Analysis Tools** with distribution plots
+- **Tempo Stability Analysis** for rhythm assessment
+- **Professional Radar Charts** for feature profiling
 
-- [Features](#-features)
-- [Demo](#-demo)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Supported Formats](#-supported-formats)
-- [Visualizations](#-visualizations)
-- [Technical Details](#-technical-details)
-- [Contributing](#-contributing)
-- [License](#-license)
+### 🎯 Performance Improvements
+- **Optimized Processing Pipeline** for faster analysis
+- **Memory Efficient** handling of large audio files
+- **Streamlined Interface** with organized analysis tabs
+- **Enhanced Error Handling** and user feedback
+- **Improved Visualization Performance** with better rendering
 
 ## ✨ Features
 
-### 🎨 **Beautiful UI Design**
-- Modern gradient backgrounds and custom CSS styling
-- Dark theme with vibrant, professional colors
-- Interactive metric cards and responsive layout
-- Smooth animations and hover effects
+### 🌊 Time Domain Analysis
+- **Enhanced Waveform** visualization with envelope and RMS energy
+- **Harmonic-Percussive Source Separation** for detailed component analysis
+- **Onset Detection** with precise timing and visual markers
+- **Real-Time Simulation** of live audio analysis with customizable parameters
 
-### 📊 **Advanced Visualizations**
-- **Interactive Waveform** with envelope detection
-- **Spectrogram** showing time-frequency representation
-- **Frequency Domain Analysis** with logarithmic scaling
-- **Chromagram** displaying pitch class distribution
-- **Tempo Analysis** with beat detection
-- **Feature Radar Chart** for multi-dimensional audio characteristics
+### 🌈 Frequency Domain Analysis
+- **3D Spectrogram** with interactive surface plots
+- **Mel-Scale Spectrogram** for perceptual frequency analysis
+- **Comprehensive Spectral Features** (centroid, rolloff, bandwidth, contrast, flatness)
+- **MFCC Analysis** with 20 coefficients for audio fingerprinting
 
-### 🔧 **Audio Processing Features**
-- Real-time audio feature extraction
-- MFCC (Mel-Frequency Cepstral Coefficients) analysis
-- Spectral feature computation
-- Beat and tempo detection
-- Onset strength analysis
+### 🎯 Advanced Features
+- **Tonnetz Visualization** for tonal centroid features
+- **Comprehensive Feature Profile** with radar charts
+- **Statistical Analysis** with distribution plots and stability metrics
+- **Export Capabilities** (CSV, JSON, Markdown reports)
+- **Interactive Controls** for customization and real-time parameter adjustment
 
-### 💾 **Data Export**
-- Download extracted features as CSV
-- Export analysis results for further processing
-
-## 🎬 Demo
-
-The application provides:
-1. **File Upload Interface** - Drag and drop audio files
-2. **Audio Player** - Built-in playback controls
-3. **Real-time Metrics** - Duration, sample rate, energy, etc.
-4. **Interactive Visualizations** - Zoom, pan, and hover for details
-5. **Feature Analysis** - Detailed audio characteristics
-
-## 🚀 Installation
+## 🔧 Installation
 
 ### Prerequisites
 - Python 3.8 or higher
 - pip package manager
 
-### Step 1: Clone the Repository
+### System Dependencies
+For audio processing, you'll need FFmpeg installed on your system:
+
+#### Windows
 ```bash
-git clone https://github.com/yourusername/audio-spectrum-visualizer.git
-cd audio-spectrum-visualizer
+# Using chocolatey
+choco install ffmpeg
+
+# Or download from https://ffmpeg.org/download.html
 ```
 
-### Step 2: Create Virtual Environment (Recommended)
+#### macOS
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Using Homebrew
+brew install ffmpeg
 ```
 
-### Step 3: Install Dependencies
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+### Python Dependencies
+1. Clone or download the repository
+2. Navigate to the project directory
+3. Install required packages:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Run the Application
+## 🚀 Usage
+
+1. **Start the application:**
 ```bash
-streamlit run audio_visualizer.py
+streamlit run app.py
 ```
 
-The app will automatically open in your default web browser at `http://localhost:8501`
+2. **Open your browser** and navigate to `http://localhost:8501`
 
-## 🎯 Usage
+3. **Upload an audio file** using the sidebar file uploader
+   - Supported formats: WAV, MP3, FLAC, OGG, M4A, AAC
 
-1. **Launch the App**: Run `streamlit run audio_visualizer.py`
-2. **Upload Audio**: Click "Choose an audio file" in the sidebar
-3. **Select Visualizations**: Choose which charts to display
-4. **Explore**: Interact with the visualizations using zoom, pan, and hover
-5. **Analyze**: View detailed audio features and metrics
-6. **Export**: Download feature data as CSV for further analysis
+4. **Select visualizations** from the sidebar checkboxes:
+   - Choose from Basic Analysis, Advanced Analysis, or Real-Time Features
+   - Multiple visualizations can be selected simultaneously
 
-### Quick Start Example
-```bash
-# Install dependencies
-pip install -r requirements.txt
+5. **Explore the results:**
+   - View interactive plots and metrics
+   - Use the analysis tabs for detailed insights
+   - Export data and reports for further analysis
 
-# Run the app
-streamlit run audio_visualizer.py
+## 📊 Analysis Capabilities
 
-# Open browser to http://localhost:8501
-# Upload an audio file and explore!
+### Extracted Features (100+)
+- **Basic Properties**: Duration, sample rate, RMS energy, dynamic range
+- **Statistical Features**: Mean, std deviation, skewness, kurtosis
+- **Spectral Features**: Centroid, rolloff, bandwidth, contrast, flatness
+- **Rhythm Features**: Tempo, beat tracking, onset detection
+- **Perceptual Features**: MFCC coefficients, chroma, tonnetz
+- **Advanced Features**: Harmonic-percussive separation, zero crossing rate
+
+### Visualizations
+- **Enhanced Waveform**: Multi-layer waveform with envelope and spectral centroid
+- **3D Spectrogram**: Interactive 3D surface plot of frequency content over time
+- **Mel Spectrogram**: Perceptually-weighted frequency analysis
+- **Harmonic-Percussive**: Separated harmonic and percussive components
+- **Onset Detection**: Precise onset timing with strength visualization
+- **Tonnetz**: Tonal centroid features for harmonic analysis
+- **Real-Time Simulation**: Live analysis simulation with customizable parameters
+- **Feature Profile**: Comprehensive radar chart of all extracted features
+
+## 🎛️ Interface Guide
+
+### Main Dashboard
+- **Audio Player**: Play uploaded audio files directly in the browser
+- **Metrics Cards**: Key audio properties displayed prominently
+- **Visualization Selection**: Choose specific analysis types from the sidebar
+
+### Analysis Tabs
+- **Statistical Analysis**: Amplitude distribution and statistical properties
+- **Spectral Analysis**: Frequency domain features and MFCC coefficients
+- **Temporal Analysis**: Time-based features and tempo stability
+- **Export Data**: Download analysis results in multiple formats
+
+## 📁 File Structure
+
+```
+audio-visualizer/
+├── app.py              # Main Streamlit application
+├── requirements.txt    # Python dependencies
+├── README.md          # This file
+└── sample_audio/      # (Optional) Sample audio files for testing
 ```
 
-## 🎼 Supported Formats
+## 🔧 Configuration
 
-The application supports the following audio formats:
-- **WAV** (.wav) - Uncompressed audio
-- **MP3** (.mp3) - Compressed audio
-- **FLAC** (.flac) - Lossless compression
-- **OGG** (.ogg) - Open-source format
-- **M4A** (.m4a) - Apple audio format
+### Real-Time Simulation Settings
+- **Segment Duration**: 0.05-1.0 seconds (adjustable)
+- **Update Rate**: 10-100 Hz (adjustable)
+- **Analysis Window**: Customizable for different time resolutions
 
-## 📈 Visualizations
+### Visualization Options
+- **Color Schemes**: Multiple professional color palettes
+- **Interactive Controls**: Zoom, pan, hover tooltips
+- **Export Formats**: PNG, HTML, SVG for visualizations
 
-### 1. 🌊 Interactive Waveform
-- Shows audio amplitude over time
-- Includes envelope detection
-- Hover for precise time and amplitude values
+## 🎯 Use Cases
 
-### 2. 🌈 Spectrogram
-- Time-frequency representation
-- Color-coded magnitude in dB
-- Interactive heatmap with zoom capabilities
+- **Music Analysis**: Tempo detection, harmonic analysis, onset timing
+- **Audio Research**: Feature extraction, spectral analysis, statistical modeling
+- **Education**: Learning audio signal processing concepts
+- **Quality Control**: Audio file validation and analysis
+- **Real-Time Processing**: Simulation of live audio analysis systems
 
-### 3. 📊 Frequency Analysis
-- Frequency domain representation
-- Logarithmic frequency scale
-- Magnitude response in decibels
-
-### 4. 🎼 Chromagram
-- Pitch class distribution over time
-- Shows musical note content
-- Useful for music analysis
-
-### 5. 🥁 Tempo Analysis
-- Beat detection and tracking
-- Onset strength visualization
-- Automatic BPM calculation
-
-### 6. 🎯 Feature Radar Chart
-- Multi-dimensional audio characteristics
-- Normalized feature representation
-- Visual feature profile comparison
-
-## 🔬 Technical Details
+## 🔍 Technical Details
 
 ### Audio Processing Pipeline
-1. **Audio Loading**: Uses librosa for robust audio file handling
-2. **Feature Extraction**: Computes spectral and temporal features
-3. **Signal Processing**: FFT, STFT, and other transforms
+1. **Loading**: Multi-format audio file support with librosa
+2. **Preprocessing**: Normalization and format conversion
+3. **Feature Extraction**: Comprehensive time and frequency domain analysis
 4. **Visualization**: Interactive plots with Plotly
+5. **Export**: Multiple format support for data and reports
 
-### Key Libraries Used
-- **Streamlit**: Web app framework
+### Performance Optimization
+- **Efficient Processing**: Optimized librosa operations
+- **Memory Management**: Streaming processing for large files
+- **Caching**: Streamlit caching for improved performance
+- **Parallel Processing**: Multi-threaded feature extraction
+
+## 📝 Export Formats
+
+### Data Export
+- **CSV**: Tabular data with all extracted features
+- **JSON**: Structured data for programmatic access
+- **Markdown**: Comprehensive analysis reports
+
+### Visualization Export
+- **PNG**: High-resolution images
+- **HTML**: Interactive plots for web sharing
+- **SVG**: Vector graphics for publications
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Audio file not loading:**
+   - Ensure FFmpeg is properly installed
+   - Check file format compatibility
+   - Verify file is not corrupted
+
+2. **Slow processing:**
+   - Reduce file size or duration
+   - Close other applications
+   - Check available system memory
+
+3. **Visualization not appearing:**
+   - Refresh the browser page
+   - Check browser JavaScript is enabled
+   - Try a different browser
+
+### Performance Tips
+- Use WAV files for fastest processing
+- Limit analysis to essential visualizations
+- Process shorter audio clips for real-time analysis
+- Close unused browser tabs to free memory
+
+## 🔄 Version History
+
+### v2.0 (Current)
+- **Complete UI Overhaul**: Modern glassmorphism design with enhanced visual appeal
+- **Advanced Feature Extraction**: 100+ comprehensive audio features
+- **3D Visualizations**: Interactive 3D spectrogram and surface plots
+- **Real-Time Simulation**: Live analysis simulation with customizable parameters
+- **Export System**: Multiple format support (CSV, JSON, Markdown)
+- **Harmonic-Percussive Analysis**: Advanced source separation techniques
+- **Statistical Tools**: Distribution analysis and stability metrics
+- **Performance Optimization**: Faster processing and better memory management
+
+### v1.0 (Legacy)
+- Basic waveform visualization
+- Standard spectrogram analysis
+- Simple feature extraction
+- Basic export capabilities
+
+## 🔄 Updates and Contributions
+
+This application is actively maintained and updated. For feature requests, bug reports, or contributions:
+
+1. Check the issue tracker for existing reports
+2. Create detailed bug reports with audio file examples
+3. Suggest new features with use case descriptions
+4. Submit pull requests with comprehensive testing
+
+## 📚 Dependencies
+
+- **Streamlit**: Web application framework
 - **Librosa**: Audio analysis library
-- **Plotly**: Interactive visualizations
-- **NumPy/SciPy**: Numerical computing
+- **NumPy**: Numerical computing
 - **Pandas**: Data manipulation
+- **Plotly**: Interactive visualizations
+- **SciPy**: Scientific computing
+- **Matplotlib**: Static plotting
+- **Seaborn**: Statistical visualization
 
-### Extracted Features
-- **Basic**: Duration, sample rate, RMS energy
-- **Spectral**: Centroid, rolloff, bandwidth
-- **Temporal**: Zero crossing rate, onset strength
-- **Cepstral**: 13 MFCC coefficients
-- **Rhythmic**: Tempo, beat locations
+## 🎵 Sample Audio Files
 
-## 🎨 Customization
+For testing purposes, consider using:
+- Short music clips (30-60 seconds)
+- Different genres (electronic, classical, rock)
+- Various audio qualities (different sample rates)
+- Both mono and stereo files
 
-### Styling
-The app uses custom CSS for beautiful styling. You can modify the styles in the `st.markdown()` sections:
+## 🔒 Privacy and Security
 
-```python
-# Custom CSS example
-st.markdown("""
-<style>
-    .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        /* Add your custom styles here */
-    }
-</style>
-""", unsafe_allow_html=True)
-```
-
-### Adding New Visualizations
-To add new visualizations:
-
-1. Create a new function following the pattern:
-```python
-def create_new_visualization(audio_data, sr):
-    # Your visualization code here
-    return fig
-```
-
-2. Add it to the visualization options in the sidebar
-3. Include it in the main visualization loop
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how to contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Setup
-```bash
-# Clone your fork
-git clone https://github.com/yourusername/audio-spectrum-visualizer.git
-
-# Create development environment
-python -m venv dev-env
-source dev-env/bin/activate
-
-# Install development dependencies
-pip install -r requirements.txt
-pip install black flake8 pytest  # Optional: for code formatting and testing
-```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Librosa** team for the excellent audio analysis library
-- **Streamlit** team for the amazing web app framework
-- **Plotly** team for interactive visualization tools
-- The open-source community for continuous inspiration
+- All audio processing is performed locally
+- No audio data is transmitted to external servers
+- Files are processed in memory and not stored permanently
+- User data privacy is maintained throughout the analysis
 
 ## 📞 Support
 
-If you encounter any issues or have questions:
-
-1. Check the [Issues](https://github.com/yourusername/audio-spectrum-visualizer/issues) page
-2. Create a new issue with detailed description
-3. Include your Python version and error messages
-
-## 🔄 Updates
-
-### Version 1.0.0
-- Initial release with core visualization features
-- Support for major audio formats
-- Interactive UI with modern design
-- Feature extraction and export capabilities
+For technical support or questions:
+- Check the troubleshooting section above
+- Review the technical documentation
+- Test with sample audio files
+- Verify system requirements are met
 
 ---
 
-**Made with ❤️ and 🎵 by Snehil_007_**
+**Enhanced Audio Spectrum Visualizer v2.0 - Built with ❤️ using Streamlit and Librosa**
 
-*Star ⭐ this repository if you find it useful!*
+*Professional audio analysis made accessible - Now with advanced real-time capabilities*
+
+## 📋 Changelog v2.0
+
+### 🎨 Interface Improvements
+- Modern glassmorphism design with gradient backgrounds
+- Enhanced metric cards with hover effects
+- Organized analysis tabs for better navigation
+- Real-time indicator animations
+- Improved responsive design
+
+### 🔧 Technical Enhancements
+- Advanced feature extraction pipeline
+- Optimized librosa operations
+- Memory-efficient processing
+- Enhanced error handling
+- Performance monitoring
+
+### 📊 New Analysis Features
+- Tempo stability analysis
+- Harmonic-percussive ratio calculation
+- Advanced onset detection
+- Comprehensive statistical analysis
+- Tonal centroid (Tonnetz) features
+- MFCC coefficient analysis (20 coefficients)
+
+### 🎯 Export & Reporting
+- Professional markdown reports
+- Comprehensive CSV data export
+- Structured JSON format
+- Feature summary statistics
+- Analysis metadata inclusion
