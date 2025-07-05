@@ -251,6 +251,6 @@ If you encounter any issues or have questions:
 
 ---
 
-**Made with ❤️ and 🎵 by [Your Name]**
+**Made with ❤️ and 🎵 by Snehil_007_**
 
 *Star ⭐ this repository if you find it useful!*
