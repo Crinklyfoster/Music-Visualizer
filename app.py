@@ -230,8 +230,8 @@ def extract_rhythm_features(audio_data, sr):
                 y=audio_data, 
                 sr=sr, 
                 hop_length=hop_length,
-                start_bpm=120,  # Better starting point
-                tightness=100   # More stable tracking
+                start_bpm=120,
+                tightness=100
             )
             features['Tempo'] = float(tempo)
             features['Beat_Count'] = int(len(beats))
@@ -302,7 +302,6 @@ def extract_rhythm_features(audio_data, sr):
         
     except Exception as e:
         st.error(f"Error in rhythm feature extraction: {str(e)}")
-        # Set default values
         features.update({
             'Tempo': 0.0,
             'Beat_Count': 0,
@@ -781,13 +780,13 @@ def create_feature_summary_plot(features):
         for key, value in key_features.items():
             if value > 0:
                 if key == 'Tempo':
-                    normalized_features[key] = min(value / 200, 1.0)  # Normalize tempo
+                    normalized_features[key] = min(value / 200, 1.0)
                 elif key == 'Spectral Centroid':
-                    normalized_features[key] = min(value / 4000, 1.0)  # Normalize centroid
+                    normalized_features[key] = min(value / 4000, 1.0)
                 elif key == 'Spectral Rolloff':
-                    normalized_features[key] = min(value / 8000, 1.0)  # Normalize rolloff
+                    normalized_features[key] = min(value / 8000, 1.0)
                 elif key == 'Spectral Bandwidth':
-                    normalized_features[key] = min(value / 2000, 1.0)  # Normalize bandwidth
+                    normalized_features[key] = min(value / 2000, 1.0)
                 else:
                     normalized_features[key] = min(value, 1.0)
             else:
