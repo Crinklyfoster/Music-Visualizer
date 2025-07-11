@@ -65,6 +65,34 @@ st.markdown("""
 .stProgress > div > div > div > div {
     background-color: #667eea;
 }
+
+/* Custom metric styling */
+.custom-metric {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    color: white;
+    text-align: center;
+    margin: 0.5rem 0;
+}
+
+/* Feature importance styling */
+.feature-importance {
+    background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+    padding: 0.8rem;
+    border-radius: 0.5rem;
+    color: white;
+    margin: 0.3rem 0;
+}
+
+/* Audio quality indicator */
+.audio-quality {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    color: white;
+    text-align: center;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -191,27 +219,102 @@ def extract_basic_features(audio_data, sr):
 
 @st.cache_data(show_spinner=False)
 def extract_rhythm_features(audio_data, sr):
-    """Extract rhythm features separately"""
+    """Extract rhythm features separately - FIXED VERSION"""
     features = {}
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
-        tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr, hop_length=hop_length)
-        features['Tempo'] = float(tempo)
-        features['Beat_Count'] = int(len(beats))
-        features['Beat_Density'] = float(len(beats) / (len(audio_data) / sr))
         
-        # Onset detection
-        onset_frames = librosa.onset.onset_detect(y=audio_data, sr=sr, hop_length=hop_length)
-        features['Onset_Count'] = int(len(onset_frames))
+        # Improved tempo and beat tracking with error handling
+        try:
+            tempo, beats = librosa.beat.beat_track(
+                y=audio_data, 
+                sr=sr, 
+                hop_length=hop_length,
+                start_bpm=120,  # Better starting point
+                tightness=100   # More stable tracking
+            )
+            features['Tempo'] = float(tempo)
+            features['Beat_Count'] = int(len(beats))
+            features['Beat_Density'] = float(len(beats) / (len(audio_data) / sr))
+            
+            # Beat consistency analysis
+            if len(beats) > 1:
+                beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=hop_length)
+                beat_intervals = np.diff(beat_times)
+                features['Beat_Consistency'] = float(1.0 - np.std(beat_intervals) / np.mean(beat_intervals))
+            else:
+                features['Beat_Consistency'] = 0.0
+                
+        except Exception as e:
+            st.warning(f"Beat tracking failed: {str(e)}")
+            features['Tempo'] = 0.0
+            features['Beat_Count'] = 0
+            features['Beat_Density'] = 0.0
+            features['Beat_Consistency'] = 0.0
         
-        del beats, onset_frames
+        # Improved onset detection
+        try:
+            onset_frames = librosa.onset.onset_detect(
+                y=audio_data, 
+                sr=sr, 
+                hop_length=hop_length,
+                backtrack=True,
+                pre_max=20,
+                post_max=20,
+                pre_avg=100,
+                post_avg=100,
+                delta=0.07,
+                wait=10
+            )
+            features['Onset_Count'] = int(len(onset_frames))
+            features['Onset_Density'] = float(len(onset_frames) / (len(audio_data) / sr))
+            
+            # Onset strength
+            onset_strength = librosa.onset.onset_strength(
+                y=audio_data, 
+                sr=sr, 
+                hop_length=hop_length
+            )
+            features['Onset_Strength_Mean'] = float(np.mean(onset_strength))
+            features['Onset_Strength_Std'] = float(np.std(onset_strength))
+            
+        except Exception as e:
+            st.warning(f"Onset detection failed: {str(e)}")
+            features['Onset_Count'] = 0
+            features['Onset_Density'] = 0.0
+            features['Onset_Strength_Mean'] = 0.0
+            features['Onset_Strength_Std'] = 0.0
+        
+        # Rhythm regularity
+        try:
+            tempogram = librosa.feature.tempogram(
+                y=audio_data, 
+                sr=sr, 
+                hop_length=hop_length
+            )
+            features['Rhythm_Regularity'] = float(np.mean(tempogram))
+            features['Rhythm_Complexity'] = float(np.std(tempogram))
+        except Exception as e:
+            features['Rhythm_Regularity'] = 0.0
+            features['Rhythm_Complexity'] = 0.0
+        
         cleanup_memory()
         
     except Exception as e:
-        features['Tempo'] = 0.0
-        features['Beat_Count'] = 0
-        features['Beat_Density'] = 0.0
-        features['Onset_Count'] = 0
+        st.error(f"Error in rhythm feature extraction: {str(e)}")
+        # Set default values
+        features.update({
+            'Tempo': 0.0,
+            'Beat_Count': 0,
+            'Beat_Density': 0.0,
+            'Beat_Consistency': 0.0,
+            'Onset_Count': 0,
+            'Onset_Density': 0.0,
+            'Onset_Strength_Mean': 0.0,
+            'Onset_Strength_Std': 0.0,
+            'Rhythm_Regularity': 0.0,
+            'Rhythm_Complexity': 0.0
+        })
     
     return features
 
@@ -455,6 +558,309 @@ def create_spectrum_plot(audio_data, sr):
         st.error(f"Error creating spectrum plot: {str(e)}")
         return None
 
+@memory_monitor
+def create_spectrogram(audio_data, sr):
+    """Create spectrogram plot"""
+    try:
+        hop_length = adaptive_hop_length(len(audio_data), sr)
+        
+        # Compute spectrogram
+        D = librosa.stft(audio_data, hop_length=hop_length)
+        S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
+        
+        # Downsample for visualization if needed
+        if S_db.shape[1] > 1000:
+            step = S_db.shape[1] // 1000
+            S_db = S_db[:, ::step]
+        
+        # Create time and frequency axes
+        times = librosa.frames_to_time(np.arange(S_db.shape[1]), sr=sr, hop_length=hop_length)
+        freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=S_db,
+            x=times,
+            y=freqs,
+            colorscale='Viridis',
+            hovertemplate='Time: %{x:.3f}s<br>Frequency: %{y:.0f}Hz<br>Power: %{z:.1f}dB<extra></extra>'
+        ))
+        
+        template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+        fig.update_layout(
+            title="Spectrogram",
+            xaxis_title="Time (s)",
+            yaxis_title="Frequency (Hz)",
+            template=template,
+            height=500
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating spectrogram: {str(e)}")
+        return None
+
+@memory_monitor
+def create_mel_spectrogram(audio_data, sr):
+    """Create mel spectrogram plot"""
+    try:
+        hop_length = adaptive_hop_length(len(audio_data), sr)
+        
+        # Compute mel spectrogram
+        S = librosa.feature.melspectrogram(y=audio_data, sr=sr, hop_length=hop_length)
+        S_db = librosa.power_to_db(S, ref=np.max)
+        
+        # Downsample for visualization if needed
+        if S_db.shape[1] > 1000:
+            step = S_db.shape[1] // 1000
+            S_db = S_db[:, ::step]
+        
+        # Create time and mel frequency axes
+        times = librosa.frames_to_time(np.arange(S_db.shape[1]), sr=sr, hop_length=hop_length)
+        mel_freqs = librosa.mel_frequencies(n_mels=S_db.shape[0])
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=S_db,
+            x=times,
+            y=mel_freqs,
+            colorscale='Plasma',
+            hovertemplate='Time: %{x:.3f}s<br>Mel Band: %{y}<br>Power: %{z:.1f}dB<extra></extra>'
+        ))
+        
+        template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+        fig.update_layout(
+            title="Mel Spectrogram",
+            xaxis_title="Time (s)",
+            yaxis_title="Mel Frequency",
+            template=template,
+            height=500
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating mel spectrogram: {str(e)}")
+        return None
+
+@memory_monitor
+def create_chroma_plot(audio_data, sr):
+    """Create chromagram plot"""
+    try:
+        hop_length = adaptive_hop_length(len(audio_data), sr)
+        
+        # Compute chromagram
+        chroma = librosa.feature.chroma_stft(y=audio_data, sr=sr, hop_length=hop_length)
+        
+        # Downsample for visualization if needed
+        if chroma.shape[1] > 1000:
+            step = chroma.shape[1] // 1000
+            chroma = chroma[:, ::step]
+        
+        # Create time axis
+        times = librosa.frames_to_time(np.arange(chroma.shape[1]), sr=sr, hop_length=hop_length)
+        chroma_labels = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=chroma,
+            x=times,
+            y=chroma_labels,
+            colorscale='Blues',
+            hovertemplate='Time: %{x:.3f}s<br>Note: %{y}<br>Strength: %{z:.3f}<extra></extra>'
+        ))
+        
+        template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+        fig.update_layout(
+            title="Chromagram",
+            xaxis_title="Time (s)",
+            yaxis_title="Pitch Class",
+            template=template,
+            height=400
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating chromagram: {str(e)}")
+        return None
+
+def create_rhythm_analysis_plot(audio_data, sr):
+    """Create comprehensive rhythm analysis plot"""
+    try:
+        hop_length = adaptive_hop_length(len(audio_data), sr)
+        
+        # Create subplots for rhythm analysis
+        fig = make_subplots(
+            rows=3, cols=1,
+            subplot_titles=('Onset Strength', 'Tempogram', 'Beat Tracking'),
+            vertical_spacing=0.1,
+            shared_xaxes=True
+        )
+        
+        # Onset strength
+        onset_strength = librosa.onset.onset_strength(y=audio_data, sr=sr, hop_length=hop_length)
+        times = librosa.frames_to_time(np.arange(len(onset_strength)), sr=sr, hop_length=hop_length)
+        
+        fig.add_trace(go.Scatter(
+            x=times, y=onset_strength,
+            mode='lines', name='Onset Strength',
+            line=dict(color='#ff6b6b', width=1),
+            hovertemplate='Time: %{x:.3f}s<br>Strength: %{y:.3f}<extra></extra>'
+        ), row=1, col=1)
+        
+        # Tempogram
+        tempogram = librosa.feature.tempogram(y=audio_data, sr=sr, hop_length=hop_length)
+        tempogram_times = librosa.frames_to_time(np.arange(tempogram.shape[1]), sr=sr, hop_length=hop_length)
+        tempo_axis = librosa.tempo_frequencies(len(tempogram), hop_length=hop_length, sr=sr)
+        
+        fig.add_trace(go.Heatmap(
+            z=tempogram,
+            x=tempogram_times,
+            y=tempo_axis,
+            colorscale='Hot',
+            showscale=False,
+            hovertemplate='Time: %{x:.3f}s<br>Tempo: %{y:.1f}BPM<br>Strength: %{z:.3f}<extra></extra>'
+        ), row=2, col=1)
+        
+        # Beat tracking
+        try:
+            tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr, hop_length=hop_length)
+            beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=hop_length)
+            
+            # Create beat visualization
+            beat_strength = np.zeros_like(times)
+            for beat_time in beat_times:
+                closest_idx = np.argmin(np.abs(times - beat_time))
+                if closest_idx < len(beat_strength):
+                    beat_strength[closest_idx] = 1.0
+            
+            fig.add_trace(go.Scatter(
+                x=times, y=beat_strength,
+                mode='markers+lines', name='Beats',
+                line=dict(color='#4ecdc4', width=2),
+                marker=dict(size=8, color='#4ecdc4'),
+                hovertemplate='Time: %{x:.3f}s<br>Beat: %{y}<extra></extra>'
+            ), row=3, col=1)
+            
+        except Exception as e:
+            st.warning(f"Beat tracking visualization failed: {str(e)}")
+        
+        template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+        fig.update_layout(
+            height=700,
+            title_text="Rhythm Analysis",
+            showlegend=False,
+            template=template
+        )
+        
+        fig.update_xaxes(title_text="Time (s)", row=3, col=1)
+        fig.update_yaxes(title_text="Strength", row=1, col=1)
+        fig.update_yaxes(title_text="Tempo (BPM)", row=2, col=1)
+        fig.update_yaxes(title_text="Beat", row=3, col=1)
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating rhythm analysis plot: {str(e)}")
+        return None
+
+def create_feature_summary_plot(features):
+    """Create feature summary visualization"""
+    try:
+        # Select key features for visualization
+        key_features = {
+            'Tempo': features.get('Tempo', 0),
+            'Spectral Centroid': features.get('Spectral_Centroid_Mean', 0),
+            'RMS Energy': features.get('RMS_Energy', 0),
+            'Zero Crossing Rate': features.get('Zero_Crossing_Rate', 0),
+            'Spectral Rolloff': features.get('Spectral_Rolloff_Mean', 0),
+            'Spectral Bandwidth': features.get('Spectral_Bandwidth_Mean', 0)
+        }
+        
+        # Normalize features for better visualization
+        normalized_features = {}
+        for key, value in key_features.items():
+            if value > 0:
+                if key == 'Tempo':
+                    normalized_features[key] = min(value / 200, 1.0)  # Normalize tempo
+                elif key == 'Spectral Centroid':
+                    normalized_features[key] = min(value / 4000, 1.0)  # Normalize centroid
+                elif key == 'Spectral Rolloff':
+                    normalized_features[key] = min(value / 8000, 1.0)  # Normalize rolloff
+                elif key == 'Spectral Bandwidth':
+                    normalized_features[key] = min(value / 2000, 1.0)  # Normalize bandwidth
+                else:
+                    normalized_features[key] = min(value, 1.0)
+            else:
+                normalized_features[key] = 0
+        
+        # Create radar chart
+        categories = list(normalized_features.keys())
+        values = list(normalized_features.values())
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=categories,
+            fill='toself',
+            name='Audio Features',
+            line=dict(color='#667eea'),
+            fillcolor='rgba(102, 126, 234, 0.3)'
+        ))
+        
+        template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 1]
+                )
+            ),
+            showlegend=False,
+            title="Audio Feature Summary",
+            template=template,
+            height=500
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating feature summary plot: {str(e)}")
+        return None
+
+def create_advanced_feature_plots(features):
+    """Create advanced feature visualization plots"""
+    try:
+        # MFCC features plot
+        mfcc_features = {k: v for k, v in features.items() if k.startswith('MFCC') and k.endswith('_Mean')}
+        
+        if mfcc_features:
+            fig_mfcc = go.Figure()
+            mfcc_names = list(mfcc_features.keys())
+            mfcc_values = list(mfcc_features.values())
+            
+            fig_mfcc.add_trace(go.Bar(
+                x=mfcc_names,
+                y=mfcc_values,
+                marker_color='#667eea',
+                hovertemplate='MFCC: %{x}<br>Value: %{y:.4f}<extra></extra>'
+            ))
+            
+            template = "plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white"
+            fig_mfcc.update_layout(
+                title="MFCC Features",
+                xaxis_title="MFCC Coefficient",
+                yaxis_title="Mean Value",
+                template=template,
+                height=400
+            )
+            
+            return fig_mfcc
+        
+    except Exception as e:
+        st.error(f"Error creating advanced feature plots: {str(e)}")
+        return None
+
 def display_feature_metrics(features):
     """Display key metrics in a nice format"""
     try:
@@ -570,7 +976,10 @@ def main():
                 st.subheader("📈 Visualizations")
                 
                 # Tabs for different visualizations
-                tab1, tab2 = st.tabs(["🌊 Waveform", "📊 Spectrum"])
+                tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+                    "🌊 Waveform", "📊 Spectrum", "🔥 Spectrogram", 
+                    "🎵 Mel Spectrogram", "🎹 Chromagram", "🥁 Rhythm", "📋 Summary"
+                ])
                 
                 with tab1:
                     st.subheader("Waveform Analysis")
@@ -584,20 +993,64 @@ def main():
                     if spectrum_fig:
                         st.plotly_chart(spectrum_fig, use_container_width=True)
                 
-                # Feature table
-                st.subheader("📋 All Features")
-                feature_df = pd.DataFrame(list(features.items()), columns=['Feature', 'Value'])
-                feature_df['Value'] = feature_df['Value'].apply(lambda x: f"{x:.6f}" if isinstance(x, float) else str(x))
-                st.dataframe(feature_df, use_container_width=True)
+                with tab3:
+                    st.subheader("Spectrogram")
+                    spectrogram_fig = create_spectrogram(audio_data, sr)
+                    if spectrogram_fig:
+                        st.plotly_chart(spectrogram_fig, use_container_width=True)
                 
-                # Download features as CSV
-                csv = feature_df.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download Features as CSV",
-                    data=csv,
-                    file_name=f"audio_features_{uploaded_file.name}.csv",
-                    mime="text/csv"
-                )
+                with tab4:
+                    st.subheader("Mel Spectrogram")
+                    mel_fig = create_mel_spectrogram(audio_data, sr)
+                    if mel_fig:
+                        st.plotly_chart(mel_fig, use_container_width=True)
+                
+                with tab5:
+                    st.subheader("Chromagram")
+                    chroma_fig = create_chroma_plot(audio_data, sr)
+                    if chroma_fig:
+                        st.plotly_chart(chroma_fig, use_container_width=True)
+                
+                with tab6:
+                    st.subheader("Rhythm Analysis")
+                    rhythm_fig = create_rhythm_analysis_plot(audio_data, sr)
+                    if rhythm_fig:
+                        st.plotly_chart(rhythm_fig, use_container_width=True)
+                    
+                    # Display rhythm metrics
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Beat Consistency", f"{features.get('Beat_Consistency', 0):.3f}")
+                    with col2:
+                        st.metric("Onset Density", f"{features.get('Onset_Density', 0):.3f}")
+                    with col3:
+                        st.metric("Rhythm Regularity", f"{features.get('Rhythm_Regularity', 0):.3f}")
+                
+                with tab7:
+                    st.subheader("Feature Summary")
+                    summary_fig = create_feature_summary_plot(features)
+                    if summary_fig:
+                        st.plotly_chart(summary_fig, use_container_width=True)
+                    
+                    # MFCC visualization
+                    mfcc_fig = create_advanced_feature_plots(features)
+                    if mfcc_fig:
+                        st.plotly_chart(mfcc_fig, use_container_width=True)
+                    
+                    # Feature table
+                    st.subheader("📋 All Features")
+                    feature_df = pd.DataFrame(list(features.items()), columns=['Feature', 'Value'])
+                    feature_df['Value'] = feature_df['Value'].apply(lambda x: f"{x:.6f}" if isinstance(x, float) else str(x))
+                    st.dataframe(feature_df, use_container_width=True)
+                    
+                    # Download features as CSV
+                    csv = feature_df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download Features as CSV",
+                        data=csv,
+                        file_name=f"audio_features_{uploaded_file.name}.csv",
+                        mime="text/csv"
+                    )
                 
                 # Memory usage info
                 current_memory = get_memory_usage()
@@ -610,6 +1063,31 @@ def main():
     
     else:
         st.info("👆 Please upload an audio file to begin analysis")
+        st.markdown("""
+        ### 📝 Instructions:
+        1. **Upload** an audio file using the file uploader above
+        2. **Play** the audio to preview it
+        3. **Click** the "Analyze Audio" button to extract features
+        4. **Explore** different visualizations in the tabs
+        5. **Download** the extracted features as CSV
+        
+        ### 🎵 Supported Features:
+        - **Temporal Features**: RMS Energy, Zero Crossing Rate
+        - **Spectral Features**: Spectral Centroid, Rolloff, Bandwidth
+        - **Rhythmic Features**: Tempo, Beat Tracking, Onset Detection
+        - **Harmonic Features**: Chromagram, Pitch Class Profiles
+        - **Perceptual Features**: MFCC, Mel Spectrogram
+        - **Statistical Features**: Mean, Std, Skewness, Kurtosis
+        
+        ### 📊 Visualizations:
+        - **Waveform**: Time-domain representation
+        - **Spectrum**: Frequency-domain analysis
+        - **Spectrogram**: Time-frequency representation
+        - **Mel Spectrogram**: Perceptually-weighted spectrogram
+        - **Chromagram**: Pitch class energy distribution
+        - **Rhythm Analysis**: Beat tracking and onset detection
+        - **Feature Summary**: Radar chart of key features
+        """)
 
 if __name__ == "__main__":
     main()
