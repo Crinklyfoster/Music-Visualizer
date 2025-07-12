@@ -38,19 +38,40 @@ st.markdown("""
         color: #667eea;
         text-align: center;
         margin-bottom: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
     .feature-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 1.5rem;
+        border-radius: 15px;
         color: white;
-        margin: 0.5rem 0;
+        margin: 1rem 0;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
     }
     .metric-container {
         background: #f8f9fa;
         padding: 1rem;
         border-radius: 8px;
         border-left: 4px solid #667eea;
+        margin: 0.5rem 0;
+    }
+    .memory-button {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+    .success-message {
+        background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -81,6 +102,28 @@ def cleanup_memory():
     gc.collect()
     if hasattr(gc, 'set_threshold'):
         gc.set_threshold(700, 10, 10)
+
+def clear_all_memory():
+    """Comprehensive memory cleanup function"""
+    try:
+        # Clear Streamlit cache
+        st.cache_data.clear()
+        
+        # Force garbage collection multiple times
+        for _ in range(3):
+            gc.collect()
+        
+        # Reset garbage collection thresholds
+        if hasattr(gc, 'set_threshold'):
+            gc.set_threshold(700, 10, 10)
+        
+        # Clear matplotlib figures
+        plt.close('all')
+        
+        return True
+    except Exception as e:
+        st.error(f"Error during memory cleanup: {str(e)}")
+        return False
 
 def downsample_for_visualization(data, max_points=5000):
     """Downsample data for visualization to prevent memory issues"""
@@ -591,12 +634,6 @@ def create_chroma_plot(audio_data, sr):
 def create_feature_summary_table(features):
     """Create a summary table of extracted features"""
     try:
-        # Group features by category
-        basic_features = {k: v for k, v in features.items() if k in ['Duration', 'Sample_Rate', 'Total_Samples']}
-        rhythm_features = {k: v for k, v in features.items() if 'Tempo' in k or 'Beat' in k or 'Onset' in k}
-        spectral_features = {k: v for k, v in features.items() if 'Spectral' in k or 'Chroma' in k}
-        energy_features = {k: v for k, v in features.items() if 'RMS' in k or 'Zero_Crossing' in k}
-        
         # Create summary data
         summary_data = []
         
@@ -662,15 +699,34 @@ def main():
     # Sidebar
     st.sidebar.header("📊 Analysis Options")
     
-    # Memory usage display
+    # Memory usage display with refresh button
     memory_usage = get_memory_usage()
-    st.sidebar.metric("Memory Usage", f"{memory_usage:.1f} MB")
+    col1, col2 = st.sidebar.columns([2, 1])
+    with col1:
+        st.metric("Memory Usage", f"{memory_usage:.1f} MB")
+    with col2:
+        if st.button("🔄", help="Refresh memory usage"):
+            st.rerun()
+    
+    # Memory cleanup button
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🧹 Clear Memory & Cache", 
+                        help="Clear all cached data and free memory", 
+                        type="primary"):
+        with st.spinner("Clearing memory and cache..."):
+            success = clear_all_memory()
+            if success:
+                st.sidebar.success("✅ Memory cleared successfully!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.sidebar.error("❌ Error clearing memory")
     
     # File upload
     uploaded_file = st.file_uploader(
         "Choose an audio file",
         type=['wav', 'mp3', 'flac', 'ogg', 'm4a', 'aac'],
-        help="Upload an audio file for analysis"
+        help="Upload an audio file for analysis (Limit: 200MB per file)"
     )
     
     if uploaded_file is not None:
@@ -690,7 +746,8 @@ def main():
         audio_data = optimize_audio_for_processing(audio_data, sr)
         
         # Display basic info
-        st.success(f"✅ Audio loaded successfully!")
+        st.markdown('<div class="success-message">✅ Audio loaded successfully!</div>', unsafe_allow_html=True)
+        
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Duration", f"{len(audio_data) / sr:.2f}s")
@@ -781,6 +838,21 @@ def main():
                 if chroma_fig:
                     st.plotly_chart(chroma_fig, use_container_width=True)
         
+        # Analysis completion message with memory cleanup option
+        st.markdown("---")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.success("🎉 Analysis completed successfully!")
+        with col2:
+            if st.button("🧹 Free Memory", 
+                        help="Clear analysis data and free memory",
+                        type="secondary"):
+                with st.spinner("Freeing memory..."):
+                    clear_all_memory()
+                    st.success("Memory freed!")
+                    time.sleep(1)
+                    st.rerun()
+        
         # Memory cleanup
         cleanup_memory()
         
@@ -791,17 +863,25 @@ def main():
             <h3>🎵 Welcome to the Enhanced Audio Spectrum Visualizer</h3>
             <p>Upload an audio file to begin comprehensive analysis including:</p>
             <ul>
-                <li>🌊 Waveform visualization</li>
-                <li>🎼 Spectrograms and mel spectrograms</li>
-                <li>🥁 Rhythm and tempo analysis</li>
-                <li>🎹 Harmonic content analysis</li>
-                <li>📊 Comprehensive feature extraction</li>
+                <li>🌊 Advanced waveform visualization with RMS energy and spectral centroid</li>
+                <li>🎼 High-resolution spectrograms and mel spectrograms</li>
+                <li>🥁 Precise rhythm and tempo analysis with beat detection</li>
+                <li>🎹 Harmonic content analysis with chromagrams</li>
+                <li>📊 Comprehensive feature extraction (MFCC, statistical features)</li>
+                <li>💾 Memory optimization and management tools</li>
+            </ul>
+            <p><strong>New Features:</strong></p>
+            <ul>
+                <li>🧹 Memory cleanup and cache clearing</li>
+                <li>📈 Real-time memory usage monitoring</li>
+                <li>⚡ Adaptive processing for different audio lengths</li>
+                <li>📥 Export features to CSV</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
         
-        st.info("📁 Your audio file has been processed and optimized for analysis.")
-        st.info("🎵 Supported formats: WAV, MP3, FLAC, OGG, M4A, AAC")
+        st.info("📁 Supported formats: WAV, MP3, FLAC, OGG, M4A, AAC (Max: 200MB)")
+        st.info("🎵 Optimized for audio files up to 3 minutes for best performance")
 
 if __name__ == "__main__":
     main()
