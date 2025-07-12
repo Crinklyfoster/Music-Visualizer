@@ -1,5 +1,5 @@
-# 🎵 Enhanced Audio Spectrum Visualizer - Production Ready
-# Advanced real-time audio analysis with comprehensive time and frequency domain features
+# 🎵 Enhanced Audio Spectrum Visualizer - 6-Minute Optimized Version
+# Advanced real-time audio analysis optimized for songs up to 6 minutes
 
 import streamlit as st
 import numpy as np
@@ -30,7 +30,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# COMPLETE Enhanced custom CSS for styling
+# Enhanced custom CSS for styling
 st.markdown("""
 <style>
     .main-header {
@@ -95,6 +95,13 @@ st.markdown("""
         font-weight: bold;
         margin: 1rem 0;
     }
+    .optimization-info {
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,7 +121,7 @@ def memory_monitor(func):
         result = func(*args, **kwargs)
         memory_after = get_memory_usage()
         memory_diff = memory_after - memory_before
-        if memory_diff > 50:  # If function used more than 50MB
+        if memory_diff > 100:  # Increased threshold for 6-minute songs
             st.sidebar.warning(f"⚠️ {func.__name__} used {memory_diff:.1f}MB")
         return result
     return wrapper
@@ -123,10 +130,10 @@ def cleanup_memory():
     """Force garbage collection and memory cleanup"""
     gc.collect()
     if hasattr(gc, 'set_threshold'):
-        gc.set_threshold(700, 10, 10)
+        gc.set_threshold(1000, 15, 15)  # Adjusted for longer audio
 
 def clear_all_memory():
-    """COMPLETE memory cleanup function with enhanced clearing"""
+    """Enhanced memory cleanup function for 6-minute audio processing"""
     try:
         # Clear Streamlit cache
         st.cache_data.clear()
@@ -135,12 +142,12 @@ def clear_all_memory():
         plt.close('all')
         
         # Force multiple garbage collections
-        for _ in range(5):
+        for _ in range(7):  # Increased for longer audio
             gc.collect()
         
         # Reset garbage collection thresholds
         if hasattr(gc, 'set_threshold'):
-            gc.set_threshold(700, 10, 10)
+            gc.set_threshold(1000, 15, 15)
         
         # Clear global variables (safely)
         import sys
@@ -158,17 +165,19 @@ def clear_all_memory():
         st.error(f"Error during memory cleanup: {str(e)}")
         return False
 
-def downsample_for_visualization(data, max_points=5000):
-    """Downsample data for visualization to prevent memory issues"""
+def downsample_for_visualization(data, max_points=8000):
+    """Optimized downsampling for 6-minute audio visualization"""
     if len(data) > max_points:
         step = len(data) // max_points
         return data[::step]
     return data
 
 def adaptive_hop_length(audio_length, sr):
-    """Calculate adaptive hop length based on audio duration"""
+    """Optimized adaptive hop length for 6-minute songs"""
     duration = audio_length / sr
-    if duration > 120:  # > 2 minutes
+    if duration > 300:  # > 5 minutes
+        return 4096  # Larger hop length for very long songs
+    elif duration > 120:  # > 2 minutes
         return 2048
     elif duration > 60:  # > 1 minute
         return 1024
@@ -176,7 +185,7 @@ def adaptive_hop_length(audio_length, sr):
         return 512
 
 def safe_format_value(value, format_spec=".3f"):
-    """FIXED: Safely format a value that might be a NumPy array"""
+    """Safely format a value that might be a NumPy array"""
     try:
         if hasattr(value, 'item'):  # NumPy scalar
             return f"{value.item():{format_spec}}"
@@ -208,11 +217,11 @@ def load_audio(file):
     except Exception as e:
         return None, None, str(e)
 
-def optimize_audio_for_processing(audio_data, sr, max_duration=180):
-    """Optimize audio data for processing"""
+def optimize_audio_for_processing(audio_data, sr, max_duration=360):
+    """Optimize audio data for processing - Extended to 6 minutes"""
     original_duration = len(audio_data) / sr
     if original_duration > max_duration:
-        st.warning(f"⚠️ Audio duration ({original_duration:.1f}s) exceeds recommended limit ({max_duration}s). Trimming for performance.")
+        st.warning(f"⚠️ Audio duration ({original_duration:.1f}s) exceeds 6-minute limit ({max_duration}s). Trimming for optimal performance.")
         max_samples = int(max_duration * sr)
         audio_data = audio_data[:max_samples]
     
@@ -224,7 +233,7 @@ def optimize_audio_for_processing(audio_data, sr, max_duration=180):
 
 @st.cache_data(show_spinner=False)
 def extract_basic_features(audio_data, sr):
-    """Extract basic features with memory optimization"""
+    """Extract basic features optimized for 6-minute audio"""
     features = {}
     try:
         # Basic info
@@ -268,14 +277,14 @@ def extract_basic_features(audio_data, sr):
 
 @st.cache_data(show_spinner=False)
 def extract_rhythm_features(audio_data, sr):
-    """FIXED: Extract rhythm features with proper tempo handling"""
+    """Extract rhythm features with proper tempo handling"""
     features = {}
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
         tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr, hop_length=hop_length)
         
-        # FIXED: Ensure tempo is a scalar for formatting
+        # Ensure tempo is a scalar for formatting
         if isinstance(tempo, np.ndarray):
             tempo = tempo.item() if tempo.size == 1 else float(tempo[0])
         
@@ -300,14 +309,17 @@ def extract_rhythm_features(audio_data, sr):
 
 @st.cache_data(show_spinner=False)
 def extract_mfcc_features(audio_data, sr, n_mfcc=13):
-    """Extract MFCC features separately"""
+    """Extract MFCC features optimized for 6-minute audio"""
     features = {}
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
-        # Reduce MFCC count for long audio
-        if len(audio_data) / sr > 60:
-            n_mfcc = min(n_mfcc, 8)
+        # Adjust MFCC count based on duration
+        duration = len(audio_data) / sr
+        if duration > 240:  # > 4 minutes
+            n_mfcc = min(n_mfcc, 10)
+        elif duration > 120:  # > 2 minutes
+            n_mfcc = min(n_mfcc, 12)
         
         mfccs = librosa.feature.mfcc(y=audio_data, sr=sr, n_mfcc=n_mfcc, hop_length=hop_length)
         
@@ -325,7 +337,7 @@ def extract_mfcc_features(audio_data, sr, n_mfcc=13):
 
 @st.cache_data(show_spinner=False)
 def extract_chroma_features(audio_data, sr):
-    """Extract chroma features separately"""
+    """Extract chroma features optimized for 6-minute audio"""
     features = {}
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
@@ -421,10 +433,10 @@ def extract_comprehensive_features(audio_data, sr):
 
 @memory_monitor
 def create_optimized_waveform_plot(audio_data, sr):
-    """COMPLETE: Create memory-optimized waveform plot"""
+    """Create memory-optimized waveform plot for 6-minute audio"""
     try:
-        # Downsample for visualization
-        audio_viz = downsample_for_visualization(audio_data, max_points=8000)
+        # Enhanced downsampling for longer audio
+        audio_viz = downsample_for_visualization(audio_data, max_points=12000)
         time_viz = np.linspace(0, len(audio_data) / sr, len(audio_viz))
         
         # Adaptive hop length
@@ -448,7 +460,7 @@ def create_optimized_waveform_plot(audio_data, sr):
         
         # RMS Energy
         rms = librosa.feature.rms(y=audio_data, hop_length=hop_length)[0]
-        rms_viz = downsample_for_visualization(rms, max_points=2000)
+        rms_viz = downsample_for_visualization(rms, max_points=3000)
         time_rms = np.linspace(0, len(audio_data) / sr, len(rms_viz))
         
         fig.add_trace(go.Scatter(
@@ -460,7 +472,7 @@ def create_optimized_waveform_plot(audio_data, sr):
         
         # Spectral Centroid
         spectral_centroids = librosa.feature.spectral_centroid(y=audio_data, sr=sr, hop_length=hop_length)[0]
-        centroids_viz = downsample_for_visualization(spectral_centroids, max_points=2000)
+        centroids_viz = downsample_for_visualization(spectral_centroids, max_points=3000)
         time_centroids = np.linspace(0, len(audio_data) / sr, len(centroids_viz))
         
         fig.add_trace(go.Scatter(
@@ -471,7 +483,7 @@ def create_optimized_waveform_plot(audio_data, sr):
         ), row=3, col=1)
         
         fig.update_layout(
-            title="Audio Analysis Overview",
+            title="Audio Analysis Overview (6-Minute Optimized)",
             height=800,
             showlegend=False,
             template="plotly_white"
@@ -490,17 +502,17 @@ def create_optimized_waveform_plot(audio_data, sr):
 
 @memory_monitor
 def create_optimized_spectrogram(audio_data, sr):
-    """COMPLETE: Create memory-optimized spectrogram"""
+    """Create memory-optimized spectrogram for 6-minute audio"""
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
-        # Compute spectrogram
-        D = librosa.stft(audio_data, hop_length=hop_length)
+        # Compute spectrogram with optimized parameters
+        D = librosa.stft(audio_data, hop_length=hop_length, n_fft=2048)
         S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
         
-        # Downsample for visualization
-        if S_db.shape[1] > 1000:
-            step = S_db.shape[1] // 1000
+        # Enhanced downsampling for longer audio
+        if S_db.shape[1] > 1500:
+            step = S_db.shape[1] // 1500
             S_db = S_db[:, ::step]
         
         # Create time and frequency axes
@@ -516,7 +528,7 @@ def create_optimized_spectrogram(audio_data, sr):
         ))
         
         fig.update_layout(
-            title="Spectrogram",
+            title="Spectrogram (6-Minute Optimized)",
             xaxis_title="Time (s)",
             yaxis_title="Frequency (Hz)",
             height=500,
@@ -531,21 +543,21 @@ def create_optimized_spectrogram(audio_data, sr):
 
 @memory_monitor
 def create_rhythm_plot(audio_data, sr, rhythm_features):
-    """FIXED: Create rhythm analysis plot with proper formatting"""
+    """Create rhythm analysis plot optimized for 6-minute audio"""
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
         # Extract tempo and beats
         tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr, hop_length=hop_length)
         
-        # FIXED: Ensure tempo is scalar for formatting
+        # Ensure tempo is scalar for formatting
         tempo_scalar = float(tempo.item() if hasattr(tempo, 'item') else tempo)
         
         # Convert beat frames to time
         beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=hop_length)
         
-        # Create waveform for context
-        audio_viz = downsample_for_visualization(audio_data, max_points=8000)
+        # Create waveform for context with enhanced downsampling
+        audio_viz = downsample_for_visualization(audio_data, max_points=12000)
         time_viz = np.linspace(0, len(audio_data) / sr, len(audio_viz))
         
         fig = go.Figure()
@@ -558,18 +570,24 @@ def create_rhythm_plot(audio_data, sr, rhythm_features):
             hovertemplate='Time: %{x:.3f}s<br>Amplitude: %{y:.4f}<extra></extra>'
         ))
         
-        # Add beat markers
-        if len(beat_times) > 0:
-            beat_amplitudes = np.interp(beat_times, time_viz, audio_viz)
+        # Add beat markers (sample for visualization if too many)
+        if len(beat_times) > 200:  # Limit beat markers for 6-minute songs
+            beat_step = len(beat_times) // 200
+            beat_times_viz = beat_times[::beat_step]
+        else:
+            beat_times_viz = beat_times
+            
+        if len(beat_times_viz) > 0:
+            beat_amplitudes = np.interp(beat_times_viz, time_viz, audio_viz)
             fig.add_trace(go.Scatter(
-                x=beat_times, y=beat_amplitudes,
+                x=beat_times_viz, y=beat_amplitudes,
                 mode='markers', name='Beats',
-                marker=dict(color='red', size=8, symbol='x'),
+                marker=dict(color='red', size=6, symbol='x'),
                 hovertemplate=f'Beat at %{{x:.3f}}s<br>Tempo: {tempo_scalar:.1f}BPM<extra></extra>'
             ))
         
         fig.update_layout(
-            title=f"Rhythm Analysis - Tempo: {tempo_scalar:.1f} BPM",
+            title=f"Rhythm Analysis - Tempo: {tempo_scalar:.1f} BPM (6-Minute Optimized)",
             xaxis_title="Time (s)",
             yaxis_title="Amplitude",
             height=400,
@@ -584,17 +602,17 @@ def create_rhythm_plot(audio_data, sr, rhythm_features):
 
 @memory_monitor
 def create_mel_spectrogram(audio_data, sr):
-    """COMPLETE: Create mel spectrogram"""
+    """Create mel spectrogram optimized for 6-minute audio"""
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
-        # Compute mel spectrogram
-        mel_spec = librosa.feature.melspectrogram(y=audio_data, sr=sr, hop_length=hop_length)
+        # Compute mel spectrogram with optimized parameters
+        mel_spec = librosa.feature.melspectrogram(y=audio_data, sr=sr, hop_length=hop_length, n_mels=128)
         mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
         
-        # Downsample for visualization
-        if mel_spec_db.shape[1] > 1000:
-            step = mel_spec_db.shape[1] // 1000
+        # Enhanced downsampling for longer audio
+        if mel_spec_db.shape[1] > 1500:
+            step = mel_spec_db.shape[1] // 1500
             mel_spec_db = mel_spec_db[:, ::step]
         
         # Create time axis
@@ -609,7 +627,7 @@ def create_mel_spectrogram(audio_data, sr):
         ))
         
         fig.update_layout(
-            title="Mel Spectrogram",
+            title="Mel Spectrogram (6-Minute Optimized)",
             xaxis_title="Time (s)",
             yaxis_title="Mel Bands",
             height=500,
@@ -624,16 +642,16 @@ def create_mel_spectrogram(audio_data, sr):
 
 @memory_monitor
 def create_chroma_plot(audio_data, sr):
-    """COMPLETE: Create chroma plot"""
+    """Create chroma plot optimized for 6-minute audio"""
     try:
         hop_length = adaptive_hop_length(len(audio_data), sr)
         
         # Compute chroma
         chroma = librosa.feature.chroma_stft(y=audio_data, sr=sr, hop_length=hop_length)
         
-        # Downsample for visualization
-        if chroma.shape[1] > 1000:
-            step = chroma.shape[1] // 1000
+        # Enhanced downsampling for longer audio
+        if chroma.shape[1] > 1500:
+            step = chroma.shape[1] // 1500
             chroma = chroma[:, ::step]
         
         # Create time axis
@@ -651,7 +669,7 @@ def create_chroma_plot(audio_data, sr):
         ))
         
         fig.update_layout(
-            title="Chromagram",
+            title="Chromagram (6-Minute Optimized)",
             xaxis_title="Time (s)",
             yaxis_title="Pitch Class",
             height=400,
@@ -729,6 +747,14 @@ def main():
     """Main application function"""
     st.markdown('<h1 class="main-header">🎵 Enhanced Audio Spectrum Visualizer</h1>', unsafe_allow_html=True)
     
+    # Optimization info banner
+    st.markdown("""
+    <div class="optimization-info">
+        <h4>🚀 Optimized for 6-Minute Songs</h4>
+        <p>This version is specifically optimized for songs up to 6 minutes in duration with enhanced memory management and adaptive processing parameters.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Sidebar
     st.sidebar.header("📊 Analysis Options")
     
@@ -741,7 +767,7 @@ def main():
         if st.button("🔄", help="Refresh memory usage"):
             st.rerun()
     
-    # ENHANCED Memory cleanup section
+    # Enhanced Memory cleanup section
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🧹 Memory Management")
     
@@ -760,18 +786,20 @@ def main():
             else:
                 st.sidebar.error("❌ Error clearing memory")
     
-    # Memory usage warning
-    if memory_usage > 500:
+    # Memory usage warning (adjusted thresholds for 6-minute songs)
+    if memory_usage > 800:
+        st.sidebar.error(f"🚨 Very high memory usage: {memory_usage:.1f}MB")
+    elif memory_usage > 600:
         st.sidebar.warning(f"⚠️ High memory usage: {memory_usage:.1f}MB")
-    elif memory_usage > 300:
+    elif memory_usage > 400:
         st.sidebar.info(f"ℹ️ Moderate memory usage: {memory_usage:.1f}MB")
     
     # File upload
     st.markdown("### 📁 Upload Audio File")
     uploaded_file = st.file_uploader(
-        "Choose an audio file",
+        "Choose an audio file (optimized for songs up to 6 minutes)",
         type=['wav', 'mp3', 'flac', 'ogg', 'm4a', 'aac'],
-        help="Upload an audio file for analysis (Limit: 200MB per file)"
+        help="Upload an audio file for analysis (Limit: 200MB per file, optimized for 6-minute songs)"
     )
     
     if uploaded_file is not None:
@@ -787,19 +815,26 @@ def main():
             st.error("❌ Failed to load audio file")
             return
         
-        # Optimize audio
-        audio_data = optimize_audio_for_processing(audio_data, sr)
+        # Optimize audio for 6-minute processing
+        audio_data = optimize_audio_for_processing(audio_data, sr, max_duration=360)
         
         # Display basic info with enhanced styling
         st.markdown('<div class="success-message">✅ Audio loaded successfully!</div>', unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("⏱️ Duration", f"{len(audio_data) / sr:.2f}s")
         with col2:
             st.metric("🎵 Sample Rate", f"{sr} Hz")
         with col3:
             st.metric("📊 Samples", f"{len(audio_data):,}")
+        with col4:
+            # Show optimization status
+            duration = len(audio_data) / sr
+            if duration <= 360:
+                st.metric("🚀 Status", "Optimized")
+            else:
+                st.metric("⚠️ Status", "Trimmed")
         
         # Analysis options
         st.sidebar.subheader("🔧 Analysis Settings")
@@ -910,23 +945,23 @@ def main():
         # Enhanced welcome message
         st.markdown("""
         <div class="feature-card">
-            <h3>🎵 Welcome to the Enhanced Audio Spectrum Visualizer</h3>
-            <p>Upload an audio file to begin comprehensive analysis including:</p>
+            <h3>🎵 Welcome to the 6-Minute Optimized Audio Spectrum Visualizer</h3>
+            <p>This version is specifically optimized for songs up to 6 minutes in duration. Upload an audio file to begin comprehensive analysis including:</p>
             <ul>
-                <li>🌊 <strong>Advanced waveform visualization</strong> with RMS energy and spectral centroid</li>
-                <li>🎼 <strong>High-resolution spectrograms</strong> and mel spectrograms</li>
-                <li>🥁 <strong>Precise rhythm and tempo analysis</strong> with beat detection</li>
-                <li>🎹 <strong>Harmonic content analysis</strong> with chromagrams</li>
-                <li>📊 <strong>Comprehensive feature extraction</strong> (MFCC, statistical features)</li>
-                <li>💾 <strong>Advanced memory optimization</strong> and management tools</li>
+                <li>🌊 <strong>Enhanced waveform visualization</strong> with adaptive downsampling for longer songs</li>
+                <li>🎼 <strong>Optimized spectrograms</strong> with intelligent hop length selection</li>
+                <li>🥁 <strong>Smart rhythm analysis</strong> with beat marker optimization for long tracks</li>
+                <li>🎹 <strong>Efficient harmonic analysis</strong> with memory-conscious processing</li>
+                <li>📊 <strong>Adaptive feature extraction</strong> that scales with song duration</li>
+                <li>💾 <strong>Enhanced memory management</strong> for 6-minute audio processing</li>
             </ul>
-            <p><strong>🆕 Enhanced Features:</strong></p>
+            <p><strong>🚀 6-Minute Optimizations:</strong></p>
             <ul>
-                <li>🧹 <strong>Smart memory cleanup</strong> and cache clearing</li>
-                <li>📈 <strong>Real-time memory usage monitoring</strong></li>
-                <li>⚡ <strong>Adaptive processing</strong> for different audio lengths</li>
-                <li>📥 <strong>Export features to CSV</strong></li>
-                <li>🎨 <strong>Beautiful, responsive interface</strong></li>
+                <li>📈 <strong>Adaptive hop lengths:</strong> 4096 for 5+ minutes, 2048 for 2-5 minutes</li>
+                <li>🎯 <strong>Smart downsampling:</strong> 12,000 points for waveforms, 3,000 for features</li>
+                <li>🧠 <strong>Intelligent MFCC scaling:</strong> Reduces coefficients for longer audio</li>
+                <li>🔄 <strong>Enhanced garbage collection:</strong> Optimized for longer processing times</li>
+                <li>⚡ <strong>Beat marker optimization:</strong> Limits visualization points for long songs</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -936,7 +971,7 @@ def main():
         with col1:
             st.info("📁 **Supported formats:** WAV, MP3, FLAC, OGG, M4A, AAC (Max: 200MB)")
         with col2:
-            st.info("🎵 **Optimized for:** Audio files up to 3 minutes for best performance")
+            st.success("🎵 **Optimized for:** Songs up to 6 minutes with enhanced performance")
 
 if __name__ == "__main__":
     main()
